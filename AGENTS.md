@@ -21,3 +21,9 @@ lives in a separate repository and may later depend on this package.
 
 `src/missinggmm/` is the importable package. Public API to be defined; keep helpers
 private (leading underscore) until stable.
+
+## Commits
+
+Every commit message ends with the co-author trailer given in the session's attribution
+instructions, e.g. `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`. For
+squash merges, put the trailer in the PR description so it lands in the squashed commit.
