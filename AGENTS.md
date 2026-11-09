@@ -27,3 +27,5 @@ private (leading underscore) until stable.
 Every commit message ends with the co-author trailer given in the session's attribution
 instructions, e.g. `Co-Authored-By: Claude <model name> <noreply@anthropic.com>`. For
 squash merges, put the trailer in the PR description so it lands in the squashed commit.
+The `PreToolUse` hook in `.claude/hooks/` blocks Claude Code commits and PR descriptions
+that lack it.
