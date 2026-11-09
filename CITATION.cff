@@ -1,0 +1,25 @@
+---
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: missinggmm
+abstract: Generalized Method of Moments estimation with missing regressors.
+type: software
+authors:
+  - family-names: Schmitz
+    given-names: Felix
+license: MIT
+repository-code: https://github.com/felixschmitz/missinggmm
+preferred-citation:
+  type: article
+  title: A GMM approach for dealing with missing data on regressors
+  authors:
+    - family-names: Abrevaya
+      given-names: Jason
+    - family-names: Donald
+      given-names: Stephen G.
+  journal: The Review of Economics and Statistics
+  volume: 99
+  issue: 4
+  start: 657
+  end: 662
+  year: 2017
