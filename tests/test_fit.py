@@ -177,3 +177,69 @@ def test_fit_rejects_mismatched_number_of_rows(sample: Sample) -> None:
     y, X = sample
     with pytest.raises(ValueError, match="rows"):
         missinggmm.fit(y[:-1], X)
+
+
+@pytest.mark.parametrize("argument", ["y", "X"])
+def test_fit_rejects_non_numeric_input(sample: Sample, argument: str) -> None:
+    y, X = sample
+    y_input = y.astype(str) if argument == "y" else y
+    X_input = X.astype(str) if argument == "X" else X
+    with pytest.raises(TypeError, match=f"{argument} must be numeric"):
+        missinggmm.fit(y_input, X_input)
+
+
+@pytest.mark.parametrize("argument", ["y", "X"])
+def test_fit_rejects_infinite_values(sample: Sample, argument: str) -> None:
+    y, X = sample
+    y_input = y.copy()
+    X_input = X.copy()
+    (y_input if argument == "y" else X_input)[1] = np.inf
+    with pytest.raises(ValueError, match=f"{argument} must not contain infinite"):
+        missinggmm.fit(y_input, X_input)
+
+
+def test_fit_rejects_regressors_collinear_among_rows_with_observed_regressor(
+    sample: Sample,
+) -> None:
+    y, X = sample
+    X = np.column_stack([X, 2 * X[:, 2]])
+    with pytest.raises(ValueError, match="collinear in the rows with an observed"):
+        missinggmm.fit(y, X)
+
+
+def test_fit_rejects_observed_regressors_collinear_among_rows_with_missing_regressor(
+    sample: Sample,
+) -> None:
+    y, X = sample
+    X = X.copy()
+    X[np.isnan(X[:, 0]), 2] = 1.0
+    with pytest.raises(ValueError, match="collinear in the rows with a missing"):
+        missinggmm.fit(y, X)
+
+
+def test_fit_rejects_two_dimensional_y(sample: Sample) -> None:
+    y, X = sample
+    with pytest.raises(ValueError, match="y must be one-dimensional"):
+        missinggmm.fit(y[:, None], X)
+
+
+def test_fit_rejects_one_dimensional_x(sample: Sample) -> None:
+    y, X = sample
+    with pytest.raises(ValueError, match="X must be two-dimensional"):
+        missinggmm.fit(y, X[:, 0])
+
+
+def test_fit_accepts_nested_lists(sample: Sample) -> None:
+    y, X = sample
+    np.testing.assert_array_equal(
+        missinggmm.fit(y.tolist(), X.tolist()).params, missinggmm.fit(y, X).params
+    )
+
+
+def test_fit_accepts_integer_outcome(sample: Sample) -> None:
+    y, X = sample
+    y_integer = np.round(y * 10).astype(int)
+    np.testing.assert_array_equal(
+        missinggmm.fit(y_integer, X).params,
+        missinggmm.fit(y_integer.astype(float), X).params,
+    )
