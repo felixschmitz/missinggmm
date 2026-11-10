@@ -33,9 +33,13 @@ def fit(
         Coefficients, standard errors and covariance, ordered like the columns of `X`.
 
     Raises:
+        TypeError: If `y` or `X` is not numeric.
         ValueError: If any of the following holds:
 
             - `method` is unknown.
+            - `y` or `X` contains infinite values.
+            - The regressors are collinear in the rows with an observed regressor, or
+              the fully observed regressors are collinear in the other rows.
             - `y` is not one-dimensional or `X` is not two-dimensional.
             - `y` and `X` have different numbers of rows.
             - `y` has missing values.
@@ -45,14 +49,15 @@ def fit(
 
     """
     _fail_if_method_is_unknown(method)
-    y = np.asarray(y, dtype=float)
-    X = np.asarray(X, dtype=float)  # noqa: N806
+    y = _convert_to_float_array(y, "y")
+    X = _convert_to_float_array(X, "X")  # noqa: N806
     _fail_if_inputs_are_invalid(y, X)
 
     is_missing_column = np.isnan(X).any(axis=0)
     missing_column = int(np.argmax(is_missing_column))
     instrument_columns = np.flatnonzero(~is_missing_column)
     data = _GMMData.from_arrays(y, X[:, instrument_columns], X[:, missing_column])
+    _fail_if_regressors_are_collinear(data)
 
     theta_start = _calculate_complete_case_estimates(data)
     weight = np.linalg.inv(_calculate_moment_covariance(data, theta_start))
@@ -238,6 +243,13 @@ def _calculate_jacobian(data: _GMMData, theta: np.ndarray) -> np.ndarray:
     )
 
 
+def _convert_to_float_array(values: np.ndarray, name: str) -> np.ndarray:
+    array = np.asarray(values)
+    if array.dtype.kind not in "biuf":
+        raise TypeError(f"{name} must be numeric, got dtype {array.dtype}.")
+    return array.astype(float)
+
+
 def _fail_if_method_is_unknown(method: str) -> None:
     if method != "gmm":
         raise ValueError(f"Unknown method {method!r}; only 'gmm' is available.")
@@ -252,6 +264,8 @@ def _fail_if_inputs_are_invalid(y: np.ndarray, X: np.ndarray) -> None:  # noqa: 
         raise ValueError("y and X must have the same number of rows.")
     if np.isnan(y).any():
         raise ValueError("y must not contain missing values.")
+    _fail_if_infinite(y, "y")
+    _fail_if_infinite(X, "X")
     n_missing_columns = int(np.isnan(X).any(axis=0).sum())
     if n_missing_columns == 0:
         raise ValueError(
@@ -270,4 +284,21 @@ def _fail_if_inputs_are_invalid(y: np.ndarray, X: np.ndarray) -> None:  # noqa: 
         raise ValueError(
             f"At least {2 * n_instruments + 1} complete rows are needed to estimate "
             f"the moment covariance, got {X.shape[0] - n_incomplete}."
+        )
+
+
+def _fail_if_infinite(values: np.ndarray, name: str) -> None:
+    if np.isinf(values).any():
+        raise ValueError(f"{name} must not contain infinite values.")
+
+
+def _fail_if_regressors_are_collinear(data: _GMMData) -> None:
+    if np.linalg.matrix_rank(data.w_complete) < data.w_complete.shape[1]:
+        raise ValueError(
+            "The regressors are collinear in the rows with an observed regressor."
+        )
+    if np.linalg.matrix_rank(data.z_missing) < data.z_missing.shape[1]:
+        raise ValueError(
+            "The fully observed regressors are collinear in the rows with a missing "
+            "regressor."
         )

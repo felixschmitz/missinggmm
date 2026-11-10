@@ -177,3 +177,39 @@ def test_fit_rejects_mismatched_number_of_rows(sample: Sample) -> None:
     y, X = sample
     with pytest.raises(ValueError, match="rows"):
         missinggmm.fit(y[:-1], X)
+
+
+@pytest.mark.parametrize("argument", ["y", "X"])
+def test_fit_rejects_non_numeric_input(sample: Sample, argument: str) -> None:
+    y, X = sample
+    inputs = {"y": y, "X": X}
+    inputs[argument] = inputs[argument].astype(str)
+    with pytest.raises(TypeError, match=argument):
+        missinggmm.fit(inputs["y"], inputs["X"])
+
+
+@pytest.mark.parametrize("argument", ["y", "X"])
+def test_fit_rejects_infinite_values(sample: Sample, argument: str) -> None:
+    y, X = sample
+    inputs = {"y": y.copy(), "X": X.copy()}
+    inputs[argument][1] = np.inf
+    with pytest.raises(ValueError, match="infinite"):
+        missinggmm.fit(inputs["y"], inputs["X"])
+
+
+def test_fit_rejects_collinear_observed_regressors(sample: Sample) -> None:
+    y, X = sample
+    X = np.column_stack([X, 2 * X[:, 2]])
+    with pytest.raises(ValueError, match="collinear"):
+        missinggmm.fit(y, X)
+
+
+def test_fit_rejects_missing_regressor_collinear_with_observed_ones(
+    sample: Sample,
+) -> None:
+    y, X = sample
+    X = X.copy()
+    X[:, 0] = 3 * X[:, 2]
+    X[::3, 0] = np.nan
+    with pytest.raises(ValueError, match="collinear"):
+        missinggmm.fit(y, X)
