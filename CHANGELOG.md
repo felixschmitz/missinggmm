@@ -11,3 +11,6 @@
 - Validate `fit()` inputs: non-numeric arrays raise `TypeError`; infinite values and
   collinear regressors raise `ValueError`.
 - Align the package description with the repository description.
+- Add `docs/efficiency.md`, arguing the efficiency case for the GMM estimator, and
+  `docs/efficiency_simulation.py`, a Monte Carlo comparison with complete-case OLS and
+  the dummy-variable method.
