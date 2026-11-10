@@ -215,3 +215,31 @@ def test_fit_rejects_observed_regressors_collinear_among_rows_with_missing_regre
     X[np.isnan(X[:, 0]), 2] = 1.0
     with pytest.raises(ValueError, match="collinear in the rows with a missing"):
         missinggmm.fit(y, X)
+
+
+def test_fit_rejects_two_dimensional_y(sample: Sample) -> None:
+    y, X = sample
+    with pytest.raises(ValueError, match="y must be one-dimensional"):
+        missinggmm.fit(y[:, None], X)
+
+
+def test_fit_rejects_one_dimensional_x(sample: Sample) -> None:
+    y, X = sample
+    with pytest.raises(ValueError, match="X must be two-dimensional"):
+        missinggmm.fit(y, X[:, 0])
+
+
+def test_fit_accepts_nested_lists(sample: Sample) -> None:
+    y, X = sample
+    np.testing.assert_array_equal(
+        missinggmm.fit(y.tolist(), X.tolist()).params, missinggmm.fit(y, X).params
+    )
+
+
+def test_fit_accepts_integer_outcome(sample: Sample) -> None:
+    y, X = sample
+    y_integer = np.round(y * 10).astype(int)
+    np.testing.assert_array_equal(
+        missinggmm.fit(y_integer, X).params,
+        missinggmm.fit(y_integer.astype(float), X).params,
+    )
