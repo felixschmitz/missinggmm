@@ -124,15 +124,31 @@ def test_fit_is_deterministic(sample: Sample) -> None:
     )
 
 
-def test_summary_lists_every_coefficient(sample: Sample) -> None:
-    y, X = sample
-    assert missinggmm.fit(y, X).summary().count("x") >= 3
+def test_summary_formats_coefficient_row() -> None:
+    result = missinggmm.Results(
+        params=np.array([1.0, 2.0]),
+        bse=np.array([0.5, 1.0]),
+        cov=np.diag([0.25, 1.0]),
+        nobs=10,
+        converged=True,
+        n_iterations=3,
+    )
+    assert "x1      " + "      2.0000" + "      1.0000" + "      2.00" in (
+        result.summary().splitlines()
+    )
 
 
 def test_fit_rejects_unknown_method(sample: Sample) -> None:
     y, X = sample
     with pytest.raises(ValueError, match="method"):
         missinggmm.fit(y, X, method="ols")  # ty: ignore[invalid-argument-type]
+
+
+def test_fit_rejects_fewer_complete_rows_than_moment_conditions() -> None:
+    y, X = _simulate(n_observations=20, seed=5, share_missing=0.0)
+    X[:17, 0] = np.nan
+    with pytest.raises(ValueError, match="At least 5 complete rows"):
+        missinggmm.fit(y, X)
 
 
 def test_fit_rejects_x_without_missing_values(sample: Sample) -> None:

@@ -7,8 +7,8 @@ import numpy as np
 
 from missinggmm.results import Results
 
-MAX_ITERATIONS = 100
-TOLERANCE = 1e-8
+_MAX_ITERATIONS = 100
+_TOLERANCE = 1e-8
 
 
 def fit(
@@ -33,12 +33,18 @@ def fit(
         Coefficients, standard errors and covariance, ordered like the columns of `X`.
 
     Raises:
-        ValueError: If `method` is unknown, the shapes do not match, `y` has missing
-            values, or `X` does not have missing values in exactly one column.
+        ValueError: If any of the following holds:
+
+            - `method` is unknown.
+            - `y` is not one-dimensional or `X` is not two-dimensional.
+            - `y` and `X` have different numbers of rows.
+            - `y` has missing values.
+            - `X` does not have missing values in exactly one column.
+            - There are fewer incomplete rows than fully observed regressors, or
+              fewer complete rows than moment conditions for the complete rows.
 
     """
-    if method != "gmm":
-        raise ValueError(f"Unknown method {method!r}; only 'gmm' is available.")
+    _fail_if_method_is_unknown(method)
     y = np.asarray(y, dtype=float)
     X = np.asarray(X, dtype=float)  # noqa: N806
     _fail_if_inputs_are_invalid(y, X)
@@ -134,16 +140,16 @@ def _minimize_criterion(
     regressor.
     """
     theta = theta_start
-    for iteration in range(1, MAX_ITERATIONS + 1):
+    for iteration in range(1, _MAX_ITERATIONS + 1):
         jacobian = _calculate_jacobian(data, theta)
         step = np.linalg.solve(
             jacobian.T @ weight @ jacobian,
             jacobian.T @ weight @ _calculate_mean_moments(data, theta),
         )
         theta = theta + step
-        if np.max(np.abs(step)) < TOLERANCE:
+        if np.max(np.abs(step)) < _TOLERANCE:
             return theta, True, iteration
-    return theta, False, MAX_ITERATIONS
+    return theta, False, _MAX_ITERATIONS
 
 
 def _calculate_sandwich_covariance(
@@ -230,6 +236,11 @@ def _calculate_jacobian(data: _GMMData, theta: np.ndarray) -> np.ndarray:
             ),
         ]
     )
+
+
+def _fail_if_method_is_unknown(method: str) -> None:
+    if method != "gmm":
+        raise ValueError(f"Unknown method {method!r}; only 'gmm' is available.")
 
 
 def _fail_if_inputs_are_invalid(y: np.ndarray, X: np.ndarray) -> None:  # noqa: N803
