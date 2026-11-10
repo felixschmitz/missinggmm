@@ -14,3 +14,6 @@
 - Add `docs/efficiency.md`, arguing the efficiency case for the GMM estimator, and
   `docs/efficiency_simulation.py`, a Monte Carlo comparison with complete-case OLS and
   the dummy-variable method.
+- Validate the GMM estimator in `tests/test_validation.py` against complete-case OLS, the
+  dummy-variable method and the FGLS estimator of Dagenais, implemented as test helpers
+  rather than package code.
