@@ -1,45 +1,66 @@
 # missinggmm
 
-Generalized Method of Moments (GMM) estimation with missing regressors, following
-Abrevaya and Donald (2017).
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+
+Generalized Method of Moments (GMM) estimation of linear regressions with a missing
+regressor, following Abrevaya and Donald (2017).
 
 > [!WARNING]
-> Pre-alpha: this package is under active development and the API is not yet stable.
+> Pre-alpha: the API is not yet stable.
 
 ## Overview
 
 `missinggmm` estimates linear regression models when one regressor is missing for part
 of the sample. Instead of dropping incomplete observations or imputing values, the
 estimator uses the incomplete cases through additional moment conditions, which can
-increase efficiency over the complete-case estimator.
+increase efficiency over the complete-case estimator. See
+[docs/efficiency.md](docs/efficiency.md) for the argument.
 
-The package provides the GMM estimator of Abrevaya and Donald (2017). The test suite
-validates it against complete-case OLS, the dummy-variable method, and the weighted FGLS
-estimator of Dagenais (1973).
+Features:
 
-## Status
+- GMM estimator of Abrevaya and Donald (2017) with robust standard errors.
+- Input validation with descriptive errors.
+- Typed, with `numpy` as the only runtime dependency.
 
-The package is pre-alpha. The GMM estimator is implemented as `missinggmm.fit`, which
-returns a `missinggmm.Results` object with input validation. The baseline estimators are
-not part of the package; the test suite uses them to validate the GMM estimator.
-Progress is tracked in the roadmap issues:
-
-- [#1](https://github.com/felixschmitz/missinggmm/issues/1): Define public API and scope
-  (done).
-- [#2](https://github.com/felixschmitz/missinggmm/issues/2): Port GMM estimator (done).
-- [#3](https://github.com/felixschmitz/missinggmm/issues/3): Add input validation
-  (done).
-- [#4](https://github.com/felixschmitz/missinggmm/issues/4): Baseline estimators as
-  validation helpers in the tests (open): complete-case OLS, the dummy-variable method,
-  and the weighted FGLS estimator of Dagenais (1973).
-- [#5](https://github.com/felixschmitz/missinggmm/issues/5): Release 0.1.0 (open).
-
-Documentation of the efficiency gains over the baselines will be linked here once it
-exists.
+The test suite validates the estimator against complete-case OLS, the dummy-variable
+method, and the weighted FGLS estimator of Dagenais (1973).
 
 ## Installation
 
-Not yet released on PyPI. For development, see below.
+The package is not yet released on PyPI. To install it from source:
+
+```sh
+pip install git+https://github.com/felixschmitz/missinggmm
+```
+
+## Usage
+
+Mark the missing values of the incomplete regressor with `NaN`. Exactly one column of
+`X` may contain missing values; include a constant column if the model has an intercept.
+
+```python
+import numpy as np
+import missinggmm
+
+rng = np.random.default_rng(seed=0)
+n = 2_000
+constant = np.ones(n)
+z = rng.normal(size=n)
+x = 0.5 * z + rng.normal(size=n)
+y = 1.0 + 2.0 * x - 1.0 * z + rng.normal(size=n)
+
+x_observed = np.where(rng.uniform(size=n) < 0.7, x, np.nan)
+X = np.column_stack([constant, x_observed, z])
+
+results = missinggmm.fit(y, X)
+print(results.summary())
+```
+
+`fit` returns a `missinggmm.Results` object with the coefficients (`params`), standard
+errors (`bse`), covariance matrix (`cov`), the number of observations (`nobs`), and
+convergence information (`converged`, `n_iterations`). Coefficients are ordered like the
+columns of `X`.
 
 ## Development
 
@@ -53,6 +74,11 @@ pixi install
 pixi run tests
 pixi run prek run --all-files
 ```
+
+## Citation
+
+If you use this package, please cite the original paper. `CITATION.cff` contains
+citation metadata for the software.
 
 ## References
 
