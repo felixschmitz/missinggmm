@@ -182,34 +182,36 @@ def test_fit_rejects_mismatched_number_of_rows(sample: Sample) -> None:
 @pytest.mark.parametrize("argument", ["y", "X"])
 def test_fit_rejects_non_numeric_input(sample: Sample, argument: str) -> None:
     y, X = sample
-    inputs = {"y": y, "X": X}
-    inputs[argument] = inputs[argument].astype(str)
-    with pytest.raises(TypeError, match=argument):
-        missinggmm.fit(inputs["y"], inputs["X"])
+    y_input = y.astype(str) if argument == "y" else y
+    X_input = X.astype(str) if argument == "X" else X
+    with pytest.raises(TypeError, match=f"{argument} must be numeric"):
+        missinggmm.fit(y_input, X_input)
 
 
 @pytest.mark.parametrize("argument", ["y", "X"])
 def test_fit_rejects_infinite_values(sample: Sample, argument: str) -> None:
     y, X = sample
-    inputs = {"y": y.copy(), "X": X.copy()}
-    inputs[argument][1] = np.inf
-    with pytest.raises(ValueError, match="infinite"):
-        missinggmm.fit(inputs["y"], inputs["X"])
+    y_input = y.copy()
+    X_input = X.copy()
+    (y_input if argument == "y" else X_input)[1] = np.inf
+    with pytest.raises(ValueError, match=f"{argument} must not contain infinite"):
+        missinggmm.fit(y_input, X_input)
 
 
-def test_fit_rejects_collinear_observed_regressors(sample: Sample) -> None:
+def test_fit_rejects_regressors_collinear_among_rows_with_observed_regressor(
+    sample: Sample,
+) -> None:
     y, X = sample
     X = np.column_stack([X, 2 * X[:, 2]])
-    with pytest.raises(ValueError, match="collinear"):
+    with pytest.raises(ValueError, match="collinear in the rows with an observed"):
         missinggmm.fit(y, X)
 
 
-def test_fit_rejects_missing_regressor_collinear_with_observed_ones(
+def test_fit_rejects_observed_regressors_collinear_among_rows_with_missing_regressor(
     sample: Sample,
 ) -> None:
     y, X = sample
     X = X.copy()
-    X[:, 0] = 3 * X[:, 2]
-    X[::3, 0] = np.nan
-    with pytest.raises(ValueError, match="collinear"):
+    X[np.isnan(X[:, 0]), 2] = 1.0
+    with pytest.raises(ValueError, match="collinear in the rows with a missing"):
         missinggmm.fit(y, X)

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 from missinggmm.results import Results
 
@@ -243,7 +244,7 @@ def _calculate_jacobian(data: _GMMData, theta: np.ndarray) -> np.ndarray:
     )
 
 
-def _convert_to_float_array(values: np.ndarray, name: str) -> np.ndarray:
+def _convert_to_float_array(values: ArrayLike, name: str) -> np.ndarray:
     array = np.asarray(values)
     if array.dtype.kind not in "biuf":
         raise TypeError(f"{name} must be numeric, got dtype {array.dtype}.")
