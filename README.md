@@ -13,11 +13,24 @@ of the sample. Instead of dropping incomplete observations or imputing values, t
 estimator uses the incomplete cases through additional moment conditions, which can
 increase efficiency over the complete-case estimator.
 
-The following estimators are planned:
+## Status
 
-- The GMM estimator of Abrevaya and Donald (2017).
-- Baselines for comparison: complete-case OLS, the dummy-variable method, and the
-  weighted FGLS estimator of Dagenais (1973).
+The package is pre-alpha. The GMM estimator is implemented as `missinggmm.fit`, which
+returns a `missinggmm.Results` object with input validation. The baseline estimators are
+not implemented yet. Progress is tracked in the roadmap issues:
+
+- [#1](https://github.com/felixschmitz/missinggmm/issues/1): Define public API and scope
+  (done).
+- [#2](https://github.com/felixschmitz/missinggmm/issues/2): Port GMM estimator (done).
+- [#3](https://github.com/felixschmitz/missinggmm/issues/3): Add input validation
+  (done).
+- [#4](https://github.com/felixschmitz/missinggmm/issues/4): Port baseline estimators
+  (open): complete-case OLS, the dummy-variable method, and the weighted FGLS estimator
+  of Dagenais (1973).
+- [#5](https://github.com/felixschmitz/missinggmm/issues/5): Release 0.1.0 (open).
+
+Documentation of the efficiency gains over the baselines will be linked here once it
+exists.
 
 ## Installation
 
