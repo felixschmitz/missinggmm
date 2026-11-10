@@ -13,11 +13,9 @@ of the sample. Instead of dropping incomplete observations or imputing values, t
 estimator uses the incomplete cases through additional moment conditions, which can
 increase efficiency over the complete-case estimator.
 
-The following estimators are planned:
-
-- The GMM estimator of Abrevaya and Donald (2017).
-- Baselines for comparison: complete-case OLS, the dummy-variable method, and the
-  weighted FGLS estimator of Dagenais (1973).
+The package provides the GMM estimator of Abrevaya and Donald (2017). The test suite
+validates it against complete-case OLS, the dummy-variable method, and the weighted FGLS
+estimator of Dagenais (1973).
 
 ## Installation
 
