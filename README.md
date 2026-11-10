@@ -19,7 +19,7 @@ increase efficiency over the complete-case estimator. See
 
 Features:
 
-- GMM estimator of Abrevaya and Donald (2017) with robust standard errors.
+- GMM estimator of Abrevaya and Donald (2017) with sandwich standard errors.
 - Input validation with descriptive errors.
 - Typed, with `numpy` as the only runtime dependency.
 

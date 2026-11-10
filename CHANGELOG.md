@@ -17,3 +17,5 @@
 - Validate the GMM estimator in `tests/test_validation.py` against complete-case OLS, the
   dummy-variable method and the FGLS estimator of Dagenais, implemented as test helpers
   rather than package code.
+- Rewrite the README for package users: replace the status roadmap with installation,
+  a usage example and citation sections.
