@@ -18,4 +18,4 @@
   dummy-variable method and the FGLS estimator of Dagenais, implemented as test helpers
   rather than package code.
 - Add a tag-triggered release workflow that publishes to TestPyPI, then PyPI, via trusted
-  publishing.
+  publishing. Tags containing `rc` or `dev` publish to TestPyPI only.

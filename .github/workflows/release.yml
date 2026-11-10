@@ -40,6 +40,8 @@ jobs:
   publish-pypi:
     name: Publish to PyPI
     needs: publish-testpypi
+    # Pre-release tags such as v0.1.0rc1 stop at TestPyPI.
+    if: ${{ !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'dev') }}
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
