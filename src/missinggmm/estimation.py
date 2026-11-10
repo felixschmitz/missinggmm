@@ -248,3 +248,15 @@ def _fail_if_inputs_are_invalid(y: np.ndarray, X: np.ndarray) -> None:  # noqa: 
         )
     if n_missing_columns > 1:
         raise ValueError("Only one column of X may contain missing values.")
+    n_instruments = X.shape[1] - 1
+    n_incomplete = int(np.isnan(X).any(axis=1).sum())
+    if n_incomplete < n_instruments:
+        raise ValueError(
+            f"At least {n_instruments} incomplete rows are needed to estimate the "
+            f"moment covariance, got {n_incomplete}."
+        )
+    if X.shape[0] - n_incomplete < 2 * n_instruments + 1:
+        raise ValueError(
+            f"At least {2 * n_instruments + 1} complete rows are needed to estimate "
+            f"the moment covariance, got {X.shape[0] - n_incomplete}."
+        )

@@ -79,11 +79,18 @@ def test_fit_orders_parameters_like_columns_of_x(missing_column: int) -> None:
     )
 
 
-def test_fit_with_single_incomplete_row_is_close_to_statsmodels_ols() -> None:
+def test_fit_with_few_incomplete_rows_is_close_to_statsmodels_ols() -> None:
     y, X = _simulate(n_observations=2_000, seed=3, share_missing=0.0)
+    X[:10, 0] = np.nan
+    ols = sm.OLS(y[10:], X[10:]).fit()
+    np.testing.assert_allclose(missinggmm.fit(y, X).params, ols.params, atol=0.03)
+
+
+def test_fit_rejects_fewer_incomplete_rows_than_observed_regressors() -> None:
+    y, X = _simulate(n_observations=200, seed=4, share_missing=0.0)
     X[0, 0] = np.nan
-    ols = sm.OLS(y[1:], X[1:]).fit()
-    np.testing.assert_allclose(missinggmm.fit(y, X).params, ols.params, atol=0.02)
+    with pytest.raises(ValueError, match="incomplete rows"):
+        missinggmm.fit(y, X)
 
 
 def test_fit_bse_is_not_larger_than_complete_case_ols(
