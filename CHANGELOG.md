@@ -23,3 +23,6 @@
   publishing. Tags containing `rc` or `dev` publish to TestPyPI only.
 - Declare the license as the SPDX expression `MIT` instead of embedding the license text
   in the package metadata.
+- Add a Quarto documentation site in `docs/` (`pixi run -e docs docs`) with a Monte Carlo
+  comparison of GMM against complete-case OLS, the dummy-variable method and Dagenais'
+  FGLS.
