@@ -27,11 +27,18 @@ class Results:
     n_iterations: int
     """Number of iterations performed."""
 
+    j_statistic: float
+    """Hansen's J statistic of the over-identifying restrictions at `params`."""
+
+    j_df: int
+    """Degrees of freedom of `j_statistic`: moment conditions minus parameters."""
+
     def summary(self) -> str:
         """Format coefficients, standard errors and z-statistics as a table."""
         lines = [
             f"Observations: {self.nobs}",
             f"Converged: {self.converged} after {self.n_iterations} iterations",
+            f"J statistic: {self.j_statistic:.4f} (df = {self.j_df})",
             f"{'':<8}{'coef':>12}{'std err':>12}{'z':>10}",
         ]
         z_statistics = self.params / self.bse

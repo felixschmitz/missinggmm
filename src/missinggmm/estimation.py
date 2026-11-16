@@ -31,7 +31,9 @@ def fit(
         method: Estimator to use. Only `"gmm"` is available.
 
     Returns:
-        Coefficients, standard errors and covariance, ordered like the columns of `X`.
+        Coefficients, standard errors and covariance, ordered like the columns of `X`,
+        and the J statistic of the over-identifying restrictions with its degrees of
+        freedom.
 
     Raises:
         TypeError: If `y` or `X` is not numeric.
@@ -64,6 +66,7 @@ def fit(
     weight = np.linalg.inv(_calculate_moment_covariance(data, theta_start))
     theta, converged, n_iterations = _minimize_criterion(data, weight, theta_start)
     covariance = _calculate_sandwich_covariance(data, weight, theta)
+    j_statistic = _calculate_j_statistic(data, theta)
 
     # Reorder (alpha, beta) from [missing regressor, instruments] to the order of `X`.
     position = np.concatenate([[missing_column], instrument_columns])
@@ -79,6 +82,8 @@ def fit(
         nobs=y.shape[0],
         converged=converged,
         n_iterations=n_iterations,
+        j_statistic=j_statistic,
+        j_df=X.shape[1] - 1,
     )
 
 
@@ -171,6 +176,17 @@ def _calculate_sandwich_covariance(
     bread = np.linalg.inv(jacobian.T @ weight @ jacobian)
     meat = jacobian.T @ weight @ moment_covariance @ weight @ jacobian
     return bread @ meat @ bread / data.n_observations
+
+
+def _calculate_j_statistic(data: _GMMData, theta: np.ndarray) -> float:
+    r"""Calculate $J = n \bar g' S^{-1} \bar g$ with $S$ evaluated at `theta`."""
+    mean_moments = _calculate_mean_moments(data, theta)
+    moment_covariance = _calculate_moment_covariance(data, theta)
+    return float(
+        data.n_observations
+        * mean_moments
+        @ np.linalg.solve(moment_covariance, mean_moments)
+    )
 
 
 def _calculate_mean_moments(data: _GMMData, theta: np.ndarray) -> np.ndarray:

@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 - Extend Dependabot to `pre-commit` hook revisions and the `.ai-instructions` submodule.
+- Report the J statistic of the over-identifying restrictions and its degrees of
+  freedom in `Results` (`j_statistic`, `j_df`) and in `Results.summary()`.
 
 ## 0.1.0
 
