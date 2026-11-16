@@ -2,11 +2,16 @@
 
 ## [Unreleased]
 
+- Compute the data cross products of the GMM Jacobian once instead of at every Gauss-Newton
+  iteration.
 - Bump pre-commit hooks, GitHub Actions and the `.ai-instructions` submodule; ignore
   ruff `CPY001` (no copyright headers).
 - Extend Dependabot to `pre-commit` hook revisions and the `.ai-instructions` submodule.
 - Report the J statistic of the over-identifying restrictions and its degrees of
   freedom in `Results` (`j_statistic`, `j_df`) and in `Results.summary()`.
+- Report the GMM covariance as `inv(G' S⁻¹ G) / n` with the weight matrix `S⁻¹`
+  re-estimated at the final estimates, as in the reference GAUSS code; `Results.bse` and
+  `Results.cov` change slightly in finite samples.
 
 ## 0.1.0
 

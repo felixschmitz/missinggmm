@@ -1,6 +1,7 @@
 """Estimation of linear regressions with one missing regressor."""
 
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Literal
 
 import numpy as np
@@ -65,7 +66,7 @@ def fit(
     theta_start = _calculate_complete_case_estimates(data)
     weight = np.linalg.inv(_calculate_moment_covariance(data, theta_start))
     theta, converged, n_iterations = _minimize_criterion(data, weight, theta_start)
-    covariance = _calculate_sandwich_covariance(data, weight, theta)
+    covariance = _calculate_efficient_covariance(data, theta)
     j_statistic = _calculate_j_statistic(data, theta)
 
     # Reorder (alpha, beta) from [missing regressor, instruments] to the order of `X`.
@@ -123,10 +124,25 @@ class _GMMData:
         """Total number of rows."""
         return self.y_complete.shape[0] + self.y_missing.shape[0]
 
-    @property
+    @cached_property
     def w_complete(self) -> np.ndarray:
         """Regressors `(x, z)` of the rows with an observed regressor."""
         return np.column_stack([self.x_complete, self.z_complete])
+
+    @cached_property
+    def cross_w(self) -> np.ndarray:
+        """Cross product of `w_complete`, divided by the total number of rows."""
+        return self.w_complete.T @ self.w_complete / self.n_observations
+
+    @cached_property
+    def cross_z(self) -> np.ndarray:
+        """Cross product of `z_complete`, divided by the total number of rows."""
+        return self.z_complete.T @ self.z_complete / self.n_observations
+
+    @cached_property
+    def cross_z_missing(self) -> np.ndarray:
+        """Cross product of `z_missing`, divided by the total number of rows."""
+        return self.z_missing.T @ self.z_missing / self.n_observations
 
 
 def _calculate_complete_case_estimates(data: _GMMData) -> np.ndarray:
@@ -153,9 +169,10 @@ def _minimize_criterion(
     theta = theta_start
     for iteration in range(1, _MAX_ITERATIONS + 1):
         jacobian = _calculate_jacobian(data, theta)
+        jacobian_weight = jacobian.T @ weight
         step = np.linalg.solve(
-            jacobian.T @ weight @ jacobian,
-            jacobian.T @ weight @ _calculate_mean_moments(data, theta),
+            jacobian_weight @ jacobian,
+            jacobian_weight @ _calculate_mean_moments(data, theta),
         )
         theta = theta + step
         if np.max(np.abs(step)) < _TOLERANCE:
@@ -163,19 +180,15 @@ def _minimize_criterion(
     return theta, False, _MAX_ITERATIONS
 
 
-def _calculate_sandwich_covariance(
-    data: _GMMData, weight: np.ndarray, theta: np.ndarray
-) -> np.ndarray:
-    """Calculate the covariance of the estimates for the weight matrix used.
+def _calculate_efficient_covariance(data: _GMMData, theta: np.ndarray) -> np.ndarray:
+    r"""Calculate the covariance of the estimates as $(G'S^{-1}G)^{-1} / n$.
 
-    Uses $(G'WG)^{-1} G'W S W G (G'WG)^{-1} / n$ with $S$ the moment covariance at
-    `theta`, which stays valid when $W$ is not the inverse of $S$.
+    The Jacobian $G$ and the moment covariance $S$ are evaluated at `theta`, the
+    converged estimates.
     """
     jacobian = _calculate_jacobian(data, theta)
-    moment_covariance = _calculate_moment_covariance(data, theta)
-    bread = np.linalg.inv(jacobian.T @ weight @ jacobian)
-    meat = jacobian.T @ weight @ moment_covariance @ weight @ jacobian
-    return bread @ meat @ bread / data.n_observations
+    weight = np.linalg.inv(_calculate_moment_covariance(data, theta))
+    return np.linalg.inv(jacobian.T @ weight @ jacobian) / data.n_observations
 
 
 def _calculate_j_statistic(data: _GMMData, theta: np.ndarray) -> float:
@@ -239,21 +252,16 @@ def _calculate_jacobian(data: _GMMData, theta: np.ndarray) -> np.ndarray:
     n_beta = data.z_complete.shape[1]
     lambda_current = theta[: n_beta + 1]
     gamma_current = theta[n_beta + 1 :]
-    n_observations = data.n_observations
-
-    cross_w = data.w_complete.T @ data.w_complete / n_observations
-    cross_z = data.z_complete.T @ data.z_complete / n_observations
-    cross_z_missing = data.z_missing.T @ data.z_missing / n_observations
 
     return np.vstack(
         [
-            np.hstack([cross_w, np.zeros((n_beta + 1, n_beta))]),
-            np.hstack([np.zeros((n_beta, n_beta + 1)), cross_z]),
+            np.hstack([data.cross_w, np.zeros((n_beta + 1, n_beta))]),
+            np.hstack([np.zeros((n_beta, n_beta + 1)), data.cross_z]),
             np.hstack(
                 [
-                    (cross_z_missing @ gamma_current)[:, None],
-                    cross_z_missing,
-                    lambda_current[0] * cross_z_missing,
+                    (data.cross_z_missing @ gamma_current)[:, None],
+                    data.cross_z_missing,
+                    lambda_current[0] * data.cross_z_missing,
                 ]
             ),
         ]

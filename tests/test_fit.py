@@ -3,6 +3,13 @@ import pytest
 import statsmodels.api as sm
 
 import missinggmm
+from missinggmm.estimation import (
+    _calculate_complete_case_estimates,
+    _calculate_jacobian,
+    _calculate_moment_covariance,
+    _GMMData,
+    _minimize_criterion,
+)
 
 Sample = tuple[np.ndarray, np.ndarray]
 TRUE_PARAMS = np.array([1.0, 0.5, -1.0])
@@ -108,7 +115,7 @@ def test_fit_bse_is_not_larger_than_complete_case_ols(
 
 
 def test_fit_standard_errors_match_monte_carlo_standard_deviation() -> None:
-    """The sandwich standard errors track the sampling spread of the estimates."""
+    """The reported standard errors track the sampling spread of the estimates."""
     estimates = []
     reported_bse = []
     for seed in range(300):
@@ -284,3 +291,23 @@ def test_summary_reports_j_statistic_and_degrees_of_freedom(
     results: missinggmm.Results,
 ) -> None:
     assert "J statistic: 4.5000 (df = 2)" in results.summary().splitlines()
+
+
+def test_fit_covariance_is_efficient_gmm_formula_at_final_estimates(
+    sample: Sample,
+) -> None:
+    """`cov` equals `inv(G' S^-1 G) / n` with `G` and `S` evaluated at the estimates."""
+    y, X = sample
+    data = _GMMData.from_arrays(y, X[:, 1:], X[:, 0])
+    theta_start = _calculate_complete_case_estimates(data)
+    weight_start = np.linalg.inv(_calculate_moment_covariance(data, theta_start))
+    theta, _, _ = _minimize_criterion(data, weight_start, theta_start)
+    jacobian = _calculate_jacobian(data, theta)
+    weight_final = np.linalg.inv(_calculate_moment_covariance(data, theta))
+    expected = np.linalg.inv(jacobian.T @ weight_final @ jacobian) / data.n_observations
+    np.testing.assert_allclose(
+        missinggmm.fit(y, X).cov,
+        expected[: X.shape[1], : X.shape[1]],
+        rtol=1e-8,
+        atol=1e-12,
+    )
