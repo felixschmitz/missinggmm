@@ -11,10 +11,10 @@ website:
     left:
       - href: index.qmd
         text: Home
+      - href: why-gmm.qmd
+        text: Why GMM
       - href: comparison.qmd
         text: Comparison with other methods
-      - href: efficiency.md
-        text: Efficiency
     tools:
       - icon: github
         href: https://github.com/felixschmitz/missinggmm

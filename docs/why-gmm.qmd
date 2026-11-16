@@ -1,4 +1,6 @@
-# Why GMM: the efficiency case
+---
+title: "Why GMM: the efficiency case"
+---
 
 This note explains why the GMM estimator of Abrevaya and Donald (2017) is preferable to
 the baselines it is compared with: complete-case OLS, the dummy-variable method and
@@ -71,10 +73,10 @@ repository.
 - **$B = 0$:** no gain for $\beta_0$.
 - **Heteroskedasticity:** the paper reports a more pronounced gain for $\alpha_0$ when
   the conditional variances are more heteroskedastic (Section IV).
-- **Predictive power of $z$:** the simulation below varies the slope $\gamma_2$ of $z$ in
-  the projection of $x$. In this design the gains for $\alpha$ and $\beta_1$ are of
-  similar size for $\gamma_2 = 0$ and $\gamma_2 = 1$, so the simulation gives no
-  evidence that a weaker projection removes them.
+- **Predictive power of $z$:** the [simulations](comparison.qmd#monte-carlo) vary the
+  slope $\gamma_2$ of $z$ in the projection of $x$. In this design the gains for $\alpha$
+  and $\beta_1$ are of similar size for $\gamma_2 = 0$ and $\gamma_2 = 1$, so they give
+  no evidence that a weaker projection removes them.
 
 ## 3. A specification test
 
@@ -107,57 +109,8 @@ restricted estimator has no guaranteed advantage (Section III.B).
 FGLS (Dagenais, 1973) is asymptotically equivalent to a GMM estimator whose weight
 matrix is optimal only under homoskedasticity and $\Omega_{12} = 0$. It gains over
 complete-case OLS for $\beta_0$ but not for $\alpha_0$ and is relatively inefficient
-compared to GMM otherwise (Section III.C). The baseline estimators are not yet
-implemented in this package, so the simulation below omits FGLS; the paper's Table 1
-reports it.
-
-## Simulation
-
-`docs/efficiency_simulation.py` reproduces the design of Section IV of the paper with
-$K = 2$, $n = 400$, 1,000 replications, all coefficients equal to one and heteroskedastic
-errors $\sigma_\varepsilon = \sqrt{1 + x^2 + z_2^2}$, $\sigma_\xi = \sqrt{1 + z_2^2}$. It
-varies the share of missing values and $\gamma_2$. Entries are mean squared errors of
-$(\alpha, \beta_1, \beta_2)$; run `pixi run python docs/efficiency_simulation.py` to
-reproduce them.
-
-| Share missing | $\gamma_2$ | Estimator      | $\alpha$ | $\beta_1$ | $\beta_2$ |
-| ------------- | ---------- | -------------- | -------- | --------- | --------- |
-| 0.5           | 1          | Complete case  | 0.0343   | 0.0459    | 0.0617    |
-|               |            | Dummy variable | 0.0732   | 0.0870    | 0.3901    |
-|               |            | GMM            | 0.0326   | 0.0380    | 0.0482    |
-| 0.2           | 1          | Complete case  | 0.0221   | 0.0309    | 0.0382    |
-|               |            | Dummy variable | 0.0296   | 0.0384    | 0.1046    |
-|               |            | GMM            | 0.0222   | 0.0284    | 0.0348    |
-| 0.8           | 1          | Complete case  | 0.0854   | 0.1212    | 0.1521    |
-|               |            | Dummy variable | 0.1626   | 0.2025    | 0.7685    |
-|               |            | GMM            | 0.0770   | 0.0892    | 0.1129    |
-| 0.5           | 0          | Complete case  | 0.0315   | 0.0374    | 0.0446    |
-|               |            | Dummy variable | 0.0317   | 0.0374    | 0.0272    |
-|               |            | GMM            | 0.0297   | 0.0321    | 0.0290    |
-
-What the numbers show:
-
-- **First block** (50% missing, $\gamma_2 = 1$) is the paper's design. The results are
-  close to the paper's Table 1: GMM has the lowest MSE for every parameter, complete case is
-  next and the dummy-variable method is the worst, especially for $\beta_2$ (bias
-  from omitted $m_i z_{2i}$).
-- **The gain from GMM is modest for $\alpha$** (about 5% at 50% missing, about 10% at 80%)
-  and larger for $\beta_1$ and $\beta_2$ (roughly 15–25%).
-- **Less missing data, smaller gain:** at 20% missing, GMM and complete case are
-  indistinguishable for $\alpha$ and differ by under 10% for the other coefficients.
-- **More missing data, larger gain:** at 80% missing the MSE reductions relative to
-  complete case are about 10% ($\alpha$) and 25% ($\beta_1$, $\beta_2$).
-- **Dummy variable method:** with $\gamma_2 = 1$ it has larger MSE than complete case for
-  every parameter. With $\gamma_2 = 0$ it is consistent. Its MSE is then about equal
-  to complete case for $\alpha$ and $\beta_1$ and lower for $\beta_2$, which matches the
-  paper's remark that its variance is smaller for $\beta_2$. Here GMM is still lower for
-  $\alpha$ and $\beta_1$.
-
-Caveats: MSE differences of a few percent are within Monte Carlo noise at 1,000
-replications; only one seed is run; and the missingness is MCAR, which satisfies
-Assumption 1 trivially. The simulation says nothing about performance when Assumption 1
-fails (for example when missingness depends on $y$), where the paper's estimator is not
-consistent.
+compared to GMM otherwise (Section III.C). The baseline estimators are not part of this
+package; the [comparison](comparison.qmd) implements them for the simulations.
 
 ## Reference
 

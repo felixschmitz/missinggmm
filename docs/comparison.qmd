@@ -5,7 +5,7 @@ jupyter: python3
 
 Abrevaya and Donald (2017) contrast the GMM estimator with three alternatives for a
 regression with one missing regressor. This page runs all four on simulated data. The
-[efficiency note](efficiency.md) explains the theory behind the differences.
+[Why GMM](why-gmm.qmd) page explains the theory behind the differences.
 
 ```{python}
 #| echo: false
@@ -101,6 +101,7 @@ SCENARIOS = {
     "Irrelevant z in projection": dict(
         share_missing=0.5, gamma_2=0.0, heteroskedastic=True
     ),
+    "20% missing": dict(share_missing=0.2, gamma_2=1.0, heteroskedastic=True),
     "80% missing": dict(share_missing=0.8, gamma_2=1.0, heteroskedastic=True),
 }
 
@@ -166,8 +167,9 @@ plt.show()
 - **Dagenais FGLS tracks GMM when errors are homoskedastic**, as the equivalence result
   predicts. Under heteroskedasticity it improves on complete case for $\beta_2$ but
   not for $\alpha$, and GMM is ahead.
-- **More missing data, larger gain** from using the incomplete rows. At 80% missing,
-  GMM beats complete case on all three coefficients by roughly 6-16% in RMSE.
+- **More missing data, larger gain** from using the incomplete rows. At 20% missing, GMM
+  is within about 1% of complete case for $\alpha$ and about 4-5% better for the other
+  coefficients; at 80% it is better by roughly 6-16% in RMSE.
 
 These results all assume that data are missing completely at random, which satisfies
 Assumption 1. They say nothing about performance when missingness depends on $y$, where

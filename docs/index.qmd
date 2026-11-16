@@ -8,7 +8,7 @@ regressor, following Abrevaya and Donald (2017).
 Instead of dropping incomplete observations or imputing values, the estimator uses the
 incomplete cases through additional moment conditions, which can increase efficiency over
 the complete-case estimator. The [comparison](comparison.qmd) contrasts it with the
-other methods discussed in the paper, and the [efficiency note](efficiency.md) explains
+other methods discussed in the paper, and the [Why GMM](why-gmm.qmd) page explains
 where the gain comes from.
 
 ## Installation
