@@ -65,7 +65,7 @@ def fit(
     theta_start = _calculate_complete_case_estimates(data)
     weight = np.linalg.inv(_calculate_moment_covariance(data, theta_start))
     theta, converged, n_iterations = _minimize_criterion(data, weight, theta_start)
-    covariance = _calculate_sandwich_covariance(data, weight, theta)
+    covariance = _calculate_efficient_covariance(data, theta)
     j_statistic = _calculate_j_statistic(data, theta)
 
     # Reorder (alpha, beta) from [missing regressor, instruments] to the order of `X`.
@@ -163,19 +163,15 @@ def _minimize_criterion(
     return theta, False, _MAX_ITERATIONS
 
 
-def _calculate_sandwich_covariance(
-    data: _GMMData, weight: np.ndarray, theta: np.ndarray
-) -> np.ndarray:
-    """Calculate the covariance of the estimates for the weight matrix used.
+def _calculate_efficient_covariance(data: _GMMData, theta: np.ndarray) -> np.ndarray:
+    r"""Calculate the covariance of the estimates as $(G'S^{-1}G)^{-1} / n$.
 
-    Uses $(G'WG)^{-1} G'W S W G (G'WG)^{-1} / n$ with $S$ the moment covariance at
-    `theta`, which stays valid when $W$ is not the inverse of $S$.
+    The Jacobian $G$ and the moment covariance $S$ are evaluated at `theta`, the
+    converged estimates.
     """
     jacobian = _calculate_jacobian(data, theta)
-    moment_covariance = _calculate_moment_covariance(data, theta)
-    bread = np.linalg.inv(jacobian.T @ weight @ jacobian)
-    meat = jacobian.T @ weight @ moment_covariance @ weight @ jacobian
-    return bread @ meat @ bread / data.n_observations
+    weight = np.linalg.inv(_calculate_moment_covariance(data, theta))
+    return np.linalg.inv(jacobian.T @ weight @ jacobian) / data.n_observations
 
 
 def _calculate_j_statistic(data: _GMMData, theta: np.ndarray) -> float:
