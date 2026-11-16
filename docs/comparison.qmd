@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path.cwd()))
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from maketables import MTable
 
 import missinggmm
 from baselines import fit_complete_case, fit_dagenais, fit_dummy_variable
@@ -86,7 +87,10 @@ y, X = draw_sample(
 rows = {}
 for name, fit_estimator in ESTIMATORS.items():
     rows[name] = fit_estimator(y, X)[0]
-pd.DataFrame(rows, index=PARAMETER_NAMES).T.round(3)
+MTable(
+    pd.DataFrame(rows, index=PARAMETER_NAMES).T.map("{:.3f}".format),
+    caption="Estimates from one sample; the true value of every coefficient is one.",
+)
 ```
 
 ## Monte Carlo
@@ -125,17 +129,19 @@ def summarize(draws_by_estimator):
         bias = values.mean(axis=0) - TRUE_PARAMS
         rmse = np.sqrt(((values - TRUE_PARAMS) ** 2).mean(axis=0))
         records[name] = {
-            **{f"bias {p}": b for p, b in zip(PARAMETER_NAMES, bias, strict=True)},
-            **{f"RMSE {p}": r for p, r in zip(PARAMETER_NAMES, rmse, strict=True)},
+            **{("Bias", p): b for p, b in zip(PARAMETER_NAMES, bias, strict=True)},
+            **{("RMSE", p): r for p, r in zip(PARAMETER_NAMES, rmse, strict=True)},
         }
     return pd.DataFrame(records).T
 ```
 
 ```{python}
-#| output: asis
-for label, draws_by_estimator in draws.items():
-    print(f"### {label}\n")
-    print(summarize(draws_by_estimator).round(3).to_html(), "\n")
+MTable(
+    pd.concat({label: summarize(d) for label, d in draws.items()}).map("{:.3f}".format),
+    caption="Bias and RMSE by scenario.",
+    notes="Entries are averages over replications; the true value of every "
+    "coefficient is one.",
+)
 ```
 
 ```{python}
@@ -143,7 +149,7 @@ for label, draws_by_estimator in draws.items():
 frame = pd.DataFrame(
     {
         label: {
-            name: summarize(d).loc[name, "RMSE alpha"] for name in ESTIMATORS
+            name: summarize(d).loc[name, ("RMSE", "alpha")] for name in ESTIMATORS
         }
         for label, d in draws.items()
     }
