@@ -9,3 +9,15 @@ updates:
       github-actions:
         patterns:
           - '*'
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      pre-commit-hooks:
+        patterns:
+          - '*'
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+      interval: monthly
