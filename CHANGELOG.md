@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Compute the data cross products of the GMM Jacobian once instead of at every Gauss-Newton
+  iteration.
 - Extend Dependabot to `pre-commit` hook revisions and the `.ai-instructions` submodule.
 - Report the J statistic of the over-identifying restrictions and its degrees of
   freedom in `Results` (`j_statistic`, `j_df`) and in `Results.summary()`.
