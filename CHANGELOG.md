@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0
 
 - Initial project scaffold.
 - Require the Claude co-author trailer on agent-authored commits and PR descriptions,
@@ -21,3 +21,5 @@
   a usage example and citation sections.
 - Add a tag-triggered release workflow that publishes to TestPyPI, then PyPI, via trusted
   publishing. Tags containing `rc` or `dev` publish to TestPyPI only.
+- Declare the license as the SPDX expression `MIT` instead of embedding the license text
+  in the package metadata.
