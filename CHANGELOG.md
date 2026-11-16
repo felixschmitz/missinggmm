@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Compute the data cross products of the GMM Jacobian once instead of at every Gauss-Newton
+  iteration.
 - Extend Dependabot to `pre-commit` hook revisions and the `.ai-instructions` submodule.
 
 ## 0.1.0
