@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import statsmodels.api as sm
+from scipy import stats
 
 import missinggmm
 
@@ -132,6 +133,8 @@ def test_summary_formats_coefficient_row() -> None:
         nobs=10,
         converged=True,
         n_iterations=3,
+        j_statistic=4.5,
+        j_df=2,
     )
     assert "x1      " + "      2.0000" + "      1.0000" + "      2.00" in (
         result.summary().splitlines()
@@ -243,3 +246,46 @@ def test_fit_accepts_integer_outcome(sample: Sample) -> None:
         missinggmm.fit(y_integer, X).params,
         missinggmm.fit(y_integer.astype(float), X).params,
     )
+
+
+def test_fit_reports_one_degree_of_freedom_per_observed_regressor(
+    sample: Sample,
+) -> None:
+    y, X = sample
+    assert missinggmm.fit(y, X).j_df == X.shape[1] - 1
+
+
+def test_fit_j_statistic_rejects_at_nominal_level_when_moments_hold() -> None:
+    """The over-identification test has a rejection rate close to 5% at the 5% level."""
+    n_replications = 400
+    j_statistics = []
+    for seed in range(n_replications):
+        y, X = _simulate(n_observations=500, seed=1_000 + seed)
+        result = missinggmm.fit(y, X)
+        j_statistics.append(result.j_statistic)
+    critical_value = stats.chi2.ppf(0.95, df=result.j_df)
+    rejection_rate = np.mean(np.array(j_statistics) > critical_value)
+    np.testing.assert_allclose(rejection_rate, 0.05, atol=0.03)
+
+
+def test_fit_j_statistic_is_large_when_moments_are_violated() -> None:
+    """Missingness that depends on the outcome violates the moment conditions."""
+    y, X = _simulate(n_observations=2_000, seed=0, share_missing=0.0)
+    X = X.copy()
+    X[y > np.quantile(y, 0.6), 0] = np.nan
+    result = missinggmm.fit(y, X)
+    assert result.j_statistic > stats.chi2.ppf(0.99, df=result.j_df)
+
+
+def test_summary_reports_j_statistic_and_degrees_of_freedom() -> None:
+    result = missinggmm.Results(
+        params=np.array([1.0, 2.0]),
+        bse=np.array([0.5, 1.0]),
+        cov=np.diag([0.25, 1.0]),
+        nobs=10,
+        converged=True,
+        n_iterations=3,
+        j_statistic=4.5,
+        j_df=2,
+    )
+    assert "J statistic: 4.5000 (df = 2)" in result.summary().splitlines()

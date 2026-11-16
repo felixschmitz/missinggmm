@@ -23,3 +23,5 @@
   publishing. Tags containing `rc` or `dev` publish to TestPyPI only.
 - Declare the license as the SPDX expression `MIT` instead of embedding the license text
   in the package metadata.
+- Report the J statistic of the over-identifying restrictions and its degrees of
+  freedom in `Results` (`j_statistic`, `j_df`) and in `Results.summary()`.
