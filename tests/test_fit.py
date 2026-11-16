@@ -1,12 +1,15 @@
 import numpy as np
 import pytest
 import statsmodels.api as sm
-from scipy import stats
 
 import missinggmm
 
 Sample = tuple[np.ndarray, np.ndarray]
 TRUE_PARAMS = np.array([1.0, 0.5, -1.0])
+# Quantiles of the chi-squared distribution with 2 degrees of freedom, the degrees of
+# freedom of the J statistic for the three-column design from `_simulate`.
+CHI2_2_QUANTILE_95 = 5.991
+CHI2_2_QUANTILE_99 = 9.210
 
 
 def _simulate(
@@ -125,8 +128,9 @@ def test_fit_is_deterministic(sample: Sample) -> None:
     )
 
 
-def test_summary_formats_coefficient_row() -> None:
-    result = missinggmm.Results(
+@pytest.fixture
+def results() -> missinggmm.Results:
+    return missinggmm.Results(
         params=np.array([1.0, 2.0]),
         bse=np.array([0.5, 1.0]),
         cov=np.diag([0.25, 1.0]),
@@ -136,8 +140,11 @@ def test_summary_formats_coefficient_row() -> None:
         j_statistic=4.5,
         j_df=2,
     )
+
+
+def test_summary_formats_coefficient_row(results: missinggmm.Results) -> None:
     assert "x1      " + "      2.0000" + "      1.0000" + "      2.00" in (
-        result.summary().splitlines()
+        results.summary().splitlines()
     )
 
 
@@ -261,31 +268,19 @@ def test_fit_j_statistic_rejects_at_nominal_level_when_moments_hold() -> None:
     j_statistics = []
     for seed in range(n_replications):
         y, X = _simulate(n_observations=500, seed=1_000 + seed)
-        result = missinggmm.fit(y, X)
-        j_statistics.append(result.j_statistic)
-    critical_value = stats.chi2.ppf(0.95, df=result.j_df)
-    rejection_rate = np.mean(np.array(j_statistics) > critical_value)
+        j_statistics.append(missinggmm.fit(y, X).j_statistic)
+    rejection_rate = np.mean(np.array(j_statistics) > CHI2_2_QUANTILE_95)
     np.testing.assert_allclose(rejection_rate, 0.05, atol=0.03)
 
 
 def test_fit_j_statistic_is_large_when_moments_are_violated() -> None:
     """Missingness that depends on the outcome violates the moment conditions."""
     y, X = _simulate(n_observations=2_000, seed=0, share_missing=0.0)
-    X = X.copy()
     X[y > np.quantile(y, 0.6), 0] = np.nan
-    result = missinggmm.fit(y, X)
-    assert result.j_statistic > stats.chi2.ppf(0.99, df=result.j_df)
+    assert missinggmm.fit(y, X).j_statistic > CHI2_2_QUANTILE_99
 
 
-def test_summary_reports_j_statistic_and_degrees_of_freedom() -> None:
-    result = missinggmm.Results(
-        params=np.array([1.0, 2.0]),
-        bse=np.array([0.5, 1.0]),
-        cov=np.diag([0.25, 1.0]),
-        nobs=10,
-        converged=True,
-        n_iterations=3,
-        j_statistic=4.5,
-        j_df=2,
-    )
-    assert "J statistic: 4.5000 (df = 2)" in result.summary().splitlines()
+def test_summary_reports_j_statistic_and_degrees_of_freedom(
+    results: missinggmm.Results,
+) -> None:
+    assert "J statistic: 4.5000 (df = 2)" in results.summary().splitlines()
