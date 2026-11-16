@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- Extend Dependabot to `pre-commit` hook revisions and the `.ai-instructions` submodule.
+
 ## 0.1.0
 
 - Initial project scaffold.
