@@ -61,8 +61,20 @@ build.targets.wheel.sources = [ "src" ]
 prek = "*"
 [tool.pixi.environments]
 default = [ "py314", "tests" ]
+docs = [ "docs", "py314" ]
 py311 = [ "py311", "tests" ]
 py314 = [ "py314", "tests" ]
+[tool.pixi.feature.docs.dependencies]
+quarto = "*"
+ipykernel = "*"
+nbformat = "*"
+nbclient = "*"
+pyyaml = "*"
+matplotlib = "*"
+pandas = "*"
+[tool.pixi.feature.docs.tasks]
+docs = "quarto render docs"
+docs-preview = "quarto preview docs"
 [tool.pixi.feature.py311.dependencies]
 python = "~=3.11.0"
 [tool.pixi.feature.py314.dependencies]

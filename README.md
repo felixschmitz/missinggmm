@@ -14,8 +14,7 @@ regressor, following Abrevaya and Donald (2017).
 `missinggmm` estimates linear regression models when one regressor is missing for part
 of the sample. Instead of dropping incomplete observations or imputing values, the
 estimator uses the incomplete cases through additional moment conditions, which can
-increase efficiency over the complete-case estimator. See
-[docs/efficiency.md](docs/efficiency.md) for the argument.
+increase efficiency over the complete-case estimator.
 
 Features:
 

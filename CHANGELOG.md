@@ -15,9 +15,8 @@
 - Validate `fit()` inputs: non-numeric arrays raise `TypeError`; infinite values and
   collinear regressors raise `ValueError`.
 - Align the package description with the repository description.
-- Add `docs/efficiency.md`, arguing the efficiency case for the GMM estimator, and
-  `docs/efficiency_simulation.py`, a Monte Carlo comparison with complete-case OLS and
-  the dummy-variable method.
+- Add the "Why GMM" documentation page, arguing the efficiency case for the GMM
+  estimator.
 - Validate the GMM estimator in `tests/test_validation.py` against complete-case OLS, the
   dummy-variable method and the FGLS estimator of Dagenais, implemented as test helpers
   rather than package code.
@@ -27,3 +26,6 @@
   publishing. Tags containing `rc` or `dev` publish to TestPyPI only.
 - Declare the license as the SPDX expression `MIT` instead of embedding the license text
   in the package metadata.
+- Add a Quarto documentation site in `docs/` (`pixi run -e docs docs`) with a Monte Carlo
+  comparison of GMM against complete-case OLS, the dummy-variable method and Dagenais'
+  FGLS.

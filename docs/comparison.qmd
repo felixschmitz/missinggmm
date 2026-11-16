@@ -1,0 +1,181 @@
+---
+title: Comparison with other methods
+jupyter: python3
+---
+
+Abrevaya and Donald (2017) contrast the GMM estimator with three alternatives for a
+regression with one missing regressor. This page runs all four on simulated data. The
+[Why GMM](why-gmm.qmd) page explains the theory behind the differences.
+
+```{python}
+#| echo: false
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path.cwd()))
+```
+
+```{python}
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+import missinggmm
+from baselines import fit_complete_case, fit_dagenais, fit_dummy_variable
+```
+
+## The methods
+
+| Method | Idea | Uses incomplete rows | Consistent under Assumption 1 |
+| --- | --- | --- | --- |
+| Complete case | OLS on the rows where the regressor is observed | No | Yes |
+| Dummy variable | Set the missing regressor to zero and add a missing indicator | Yes | Only if the regressor is irrelevant or uncorrelated with the other regressors |
+| Dagenais FGLS | Fill the missing regressor with its projection on the other regressors, then weight by the error variances | Yes | Yes |
+| GMM | Add the moment conditions that the incomplete rows imply | Yes | Yes |
+
+The paper shows that the complete-case estimator is GMM with a subset of the moment
+conditions, that the dummy-variable method is generally inconsistent (Proposition 3), and
+that Dagenais' FGLS is GMM with a weight matrix that is optimal only under
+homoskedasticity and $\Omega_{12} = 0$ (Section III.C). The baseline estimators live in
+`docs/baselines.py`, not in the package.
+
+## Simulation design
+
+The design follows Section IV of the paper. The model is
+$y = \alpha x + \beta_1 + \beta_2 z_2 + \varepsilon$ with all coefficients equal to one,
+and $x = 1 + \gamma_2 z_2 + \xi$. The regressor $x$ is missing completely at random.
+With heteroskedasticity, $\sigma_\varepsilon = \sqrt{1 + x^2 + z_2^2}$ and
+$\sigma_\xi = \sqrt{1 + z_2^2}$; without it both standard deviations are one.
+
+```{python}
+N_OBSERVATIONS = 400
+N_REPLICATIONS = 500
+TRUE_PARAMS = np.ones(3)  # alpha, beta_1, beta_2
+PARAMETER_NAMES = ["alpha", "beta_1", "beta_2"]
+
+ESTIMATORS = {
+    "Complete case": fit_complete_case,
+    "Dummy variable": fit_dummy_variable,
+    "Dagenais FGLS": fit_dagenais,
+    "GMM": lambda y, X: (lambda r: (r.params, r.bse))(missinggmm.fit(y, X)),
+}
+
+
+def draw_sample(rng, share_missing, gamma_2, heteroskedastic):
+    z_2 = rng.standard_normal(N_OBSERVATIONS)
+    sd_xi = np.sqrt(1 + z_2**2) if heteroskedastic else 1.0
+    x = 1 + gamma_2 * z_2 + sd_xi * rng.standard_normal(N_OBSERVATIONS)
+    sd_eps = np.sqrt(1 + x**2 + z_2**2) if heteroskedastic else 1.0
+    y = x + 1 + z_2 + sd_eps * rng.standard_normal(N_OBSERVATIONS)
+    x_observed = np.where(rng.random(N_OBSERVATIONS) < share_missing, np.nan, x)
+    return y, np.column_stack([x_observed, np.ones(N_OBSERVATIONS), z_2])
+```
+
+## One sample
+
+A single draw from the paper's design (50% missing, $\gamma_2 = 1$, heteroskedastic
+errors). A single sample says little about precision, so the table shows only the
+estimates; compare them with the true value of one. Standard errors are not comparable
+across the columns of a single draw, because the baselines report classical OLS standard
+errors while the GMM standard errors are robust to heteroskedasticity.
+
+```{python}
+y, X = draw_sample(
+    np.random.default_rng(seed=1), share_missing=0.5, gamma_2=1.0, heteroskedastic=True
+)
+rows = {}
+for name, fit_estimator in ESTIMATORS.items():
+    rows[name] = fit_estimator(y, X)[0]
+pd.DataFrame(rows, index=PARAMETER_NAMES).T.round(3)
+```
+
+## Monte Carlo
+
+Each scenario draws `{python} N_REPLICATIONS` samples of `{python} N_OBSERVATIONS`
+observations and reports the bias and root mean squared error (RMSE) of every estimator.
+
+```{python}
+SCENARIOS = {
+    "Paper design": dict(share_missing=0.5, gamma_2=1.0, heteroskedastic=True),
+    "Homoskedastic errors": dict(share_missing=0.5, gamma_2=1.0, heteroskedastic=False),
+    "Irrelevant z in projection": dict(
+        share_missing=0.5, gamma_2=0.0, heteroskedastic=True
+    ),
+    "20% missing": dict(share_missing=0.2, gamma_2=1.0, heteroskedastic=True),
+    "80% missing": dict(share_missing=0.8, gamma_2=1.0, heteroskedastic=True),
+}
+
+
+def simulate(scenario, seed=0):
+    rng = np.random.default_rng(seed=seed)
+    estimates = {name: [] for name in ESTIMATORS}
+    for _ in range(N_REPLICATIONS):
+        y, X = draw_sample(rng, **scenario)
+        for name, fit_estimator in ESTIMATORS.items():
+            estimates[name].append(fit_estimator(y, X)[0])
+    return {name: np.array(values) for name, values in estimates.items()}
+
+
+draws = {label: simulate(scenario) for label, scenario in SCENARIOS.items()}
+
+
+def summarize(draws_by_estimator):
+    records = {}
+    for name, values in draws_by_estimator.items():
+        bias = values.mean(axis=0) - TRUE_PARAMS
+        rmse = np.sqrt(((values - TRUE_PARAMS) ** 2).mean(axis=0))
+        records[name] = {
+            **{f"bias {p}": b for p, b in zip(PARAMETER_NAMES, bias, strict=True)},
+            **{f"RMSE {p}": r for p, r in zip(PARAMETER_NAMES, rmse, strict=True)},
+        }
+    return pd.DataFrame(records).T
+```
+
+```{python}
+#| output: asis
+for label, draws_by_estimator in draws.items():
+    print(f"### {label}\n")
+    print(summarize(draws_by_estimator).round(3).to_html(), "\n")
+```
+
+```{python}
+#| fig-cap: "RMSE of the estimate of alpha, the coefficient of the missing regressor."
+frame = pd.DataFrame(
+    {
+        label: {
+            name: summarize(d).loc[name, "RMSE alpha"] for name in ESTIMATORS
+        }
+        for label, d in draws.items()
+    }
+)
+frame.T.plot.bar(rot=20, figsize=(8, 4), ylabel="RMSE of alpha")
+plt.tight_layout()
+plt.show()
+```
+
+## What the simulations show
+
+- **The dummy-variable method is biased** whenever $x$ is correlated with $z_2$ and
+  $\alpha \neq 0$ (all scenarios except the third). The bias does not shrink with more
+  data; it is the omitted $m_i z_{2i}$ term of Proposition 3. When $\gamma_2 = 0$ the
+  method is consistent and competitive, and even beats complete case for $\beta_2$.
+- **GMM has the lowest RMSE or ties for it** in every scenario and for every coefficient,
+  up to Monte Carlo noise at `{python} N_REPLICATIONS` replications.
+- **Gains for $\alpha$ are small.** The incomplete rows carry information about
+  $\delta = \gamma\alpha + \beta$, which mostly helps $\beta$. The gain for $\alpha$ is
+  clearest with 80% missing data.
+- **Dagenais FGLS tracks GMM when errors are homoskedastic**, as the equivalence result
+  predicts. Under heteroskedasticity it improves on complete case for $\beta_2$ but
+  not for $\alpha$, and GMM is ahead.
+- **More missing data, larger gain** from using the incomplete rows. At 20% missing, GMM
+  is within about 1% of complete case for $\alpha$ and about 4-5% better for the other
+  coefficients; at 80% it is better by roughly 6-16% in RMSE.
+
+These results all assume that data are missing completely at random, which satisfies
+Assumption 1. They say nothing about performance when missingness depends on $y$, where
+the GMM estimator is not consistent.
+
+## Reference
+
+Abrevaya, J. and Donald, S. G. (2017). A GMM approach for dealing with missing data on
+regressors. *The Review of Economics and Statistics*, 99(4), 657-662.

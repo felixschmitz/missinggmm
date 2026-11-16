@@ -1,0 +1,25 @@
+---
+project:
+  type: website
+  output-dir: _site
+execute:
+  cache: false
+website:
+  title: missinggmm
+  repo-url: https://github.com/felixschmitz/missinggmm
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: why-gmm.qmd
+        text: Why GMM
+      - href: comparison.qmd
+        text: Comparison with other methods
+    tools:
+      - icon: github
+        href: https://github.com/felixschmitz/missinggmm
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: false
