@@ -19,3 +19,5 @@
   rather than package code.
 - Rewrite the README for package users: replace the status roadmap with installation,
   a usage example and citation sections.
+- Add a tag-triggered release workflow that publishes to TestPyPI, then PyPI, via trusted
+  publishing. Tags containing `rc` or `dev` publish to TestPyPI only.
